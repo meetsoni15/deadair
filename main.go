@@ -38,21 +38,22 @@ func main() {
 		flagWorld         = flag.Bool("world", false, "Use channels 1-13 (outside North America)")
 
 		// --- New advanced flags ---
-		flagMinRSSI     = flag.Int("min-rssi", 0, "Skip APs weaker than this dBm value (e.g. -80), 0 = no filter")
-		flagPCAP        = flag.String("pcap", "", "Write live capture to file (e.g. capture.pcap)")
-		flagHandshakes  = flag.String("handshakes", "handshakes", "Directory to save .hccapx handshake files")
-		flagPMKID       = flag.String("pmkid", "", "File to append captured PMKIDs (hashcat 22000 format)")
-		flagProbes      = flag.String("probes", "", "File to save probe request log as JSON on exit")
-		flagWIDS        = flag.Bool("wids", false, "WIDS mode: detect deauth attacks instead of sending them")
-		flagWIDSThresh  = flag.Int("wids-threshold", 5, "Deauth frames/sec threshold to trigger WIDS alert")
-		flagAPI         = flag.Bool("api", false, "Enable HTTP dashboard (default port 8080)")
-		flagAPIPort     = flag.Int("api-port", 8080, "HTTP dashboard port")
-		flagGPS         = flag.Bool("gps", false, "Enable GPS tagging via gpsd at localhost:2947")
-		flagGPSAddr     = flag.String("gps-addr", "localhost:2947", "gpsd address")
-		flagWarmap      = flag.String("warmap", "warmap.geojson", "GeoJSON output file for wardriving map")
-		flagEvilTwin    = flag.Bool("evil-twin", false, "Enable rogue AP after first channel scan (requires hostapd)")
-		flagTwinIface   = flag.String("twin-iface", "", "Interface for evil twin AP (default: same as sniff iface)")
-		flagInjectIface = flag.String("inject-iface", "", "Separate interface for packet injection (multi-interface mode)")
+		flagMinRSSI         = flag.Int("min-rssi", 0, "Skip APs weaker than this dBm value (e.g. -80), 0 = no filter")
+		flagPCAP            = flag.String("pcap", "", "Write live capture to file (e.g. capture.pcap)")
+		flagHandshakes      = flag.String("handshakes", "handshakes", "Directory to save .hccapx handshake files")
+		flagPMKID           = flag.String("pmkid", "", "File to append captured PMKIDs (hashcat 22000 format)")
+		flagProbes          = flag.String("probes", "", "File to save probe request log as JSON on exit")
+		flagWIDS            = flag.Bool("wids", false, "WIDS mode: detect deauth attacks instead of sending them")
+		flagWIDSThresh      = flag.Int("wids-threshold", 5, "Deauth frames/sec threshold to trigger WIDS alert")
+		flagAPI             = flag.Bool("api", false, "Enable HTTP dashboard (default port 8080)")
+		flagAPIPort         = flag.Int("api-port", 8080, "HTTP dashboard port")
+		flagGPS             = flag.Bool("gps", false, "Enable GPS tagging via gpsd at localhost:2947")
+		flagGPSAddr         = flag.String("gps-addr", "localhost:2947", "gpsd address")
+		flagWarmap          = flag.String("warmap", "warmap.geojson", "GeoJSON output file for wardriving map")
+		flagEvilTwin        = flag.Bool("evil-twin", false, "Enable rogue AP after first channel scan (requires hostapd)")
+		flagTwinIface       = flag.String("twin-iface", "", "Interface for evil twin AP (default: same as sniff iface)")
+		flagInjectIface     = flag.String("inject-iface", "", "Separate interface for packet injection (multi-interface mode)")
+		flagIgnoreConnected = flag.Bool("ignore-connected", false, "Auto-detect and ignore the connected Wi-Fi network")
 	)
 	flag.Parse()
 
@@ -117,6 +118,22 @@ func main() {
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Invalid skip MAC %q: %v\n", *flagSkipMAC, err)
 			os.Exit(1)
+		}
+	}
+
+	// --- Check connected network to ignore before taking interface down ---
+	var ignoreConnectedBSSID net.HardwareAddr
+	if *flagIgnoreConnected {
+		bssid, err := iface.ConnectedBSSID()
+		if err == nil && bssid != nil {
+			ignoreConnectedBSSID = bssid
+			fmt.Printf("Auto-ignoring connected network: %s\n", bssid)
+			// If skipMAC isn't set, use this as the primary skip MAC for the sender config
+			if skipMAC == nil {
+				skipMAC = bssid
+			}
+		} else {
+			fmt.Fprintf(os.Stderr, "Warning: --ignore-connected passed, but no active connection found or supported.\n")
 		}
 	}
 	var targetAP net.HardwareAddr
@@ -315,6 +332,11 @@ func main() {
 				aps := tbl.All()
 				for _, ap := range aps {
 					if targetAP != nil && ap.BSSID.String() != targetAP.String() {
+						continue
+					}
+
+					// Core exclusion check: skip explicitly ignored connected BSSID
+					if ignoreConnectedBSSID != nil && ap.BSSID.String() == ignoreConnectedBSSID.String() {
 						continue
 					}
 					for _, client := range ap.Clients {
