@@ -24,8 +24,8 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Install libpcap + ARM64 cross-compiler
-        run: sudo apt-get update -qq && sudo apt-get install -y libpcap-dev gcc-aarch64-linux-gnu
+      - name: Install libpcap
+        run: sudo apt-get update -qq && sudo apt-get install -y libpcap-dev
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
