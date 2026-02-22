@@ -18,6 +18,7 @@ type APDiscoveredMsg struct {
 	BSSID   string
 	SSID    string
 	Channel int
+	RSSI    int8
 }
 
 // ClientDiscoveredMsg signals a new client was found.

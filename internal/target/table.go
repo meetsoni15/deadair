@@ -12,6 +12,23 @@ type AP struct {
 	Channel int
 	Clients []net.HardwareAddr
 	Deauths int
+	RSSI    int8 // dBm signal strength (0 = unknown)
+}
+
+// SignalBar returns a 4-char visual signal bar for the AP's RSSI.
+func (a *AP) SignalBar() string {
+	switch {
+	case a.RSSI >= -50:
+		return "████"
+	case a.RSSI >= -65:
+		return "▆▆▆░"
+	case a.RSSI >= -75:
+		return "▄▄░░"
+	case a.RSSI >= -85:
+		return "▂░░░"
+	default:
+		return "░░░░"
+	}
 }
 
 // Table is a thread-safe store of discovered APs and their clients.
@@ -29,17 +46,23 @@ func NewTable(max int) *Table {
 	}
 }
 
-// AddAP adds or updates an access point entry.
-func (t *Table) AddAP(bssid net.HardwareAddr, ssid string, channel int) {
+// AddAP adds or updates an access point entry. RSSI is updated on every sighting.
+func (t *Table) AddAP(bssid net.HardwareAddr, ssid string, channel int, rssi int8) {
 	key := bssid.String()
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	if _, ok := t.APs[key]; !ok {
-		t.APs[key] = &AP{
-			BSSID:   bssid,
-			SSID:    ssid,
-			Channel: channel,
+	if existing, ok := t.APs[key]; ok {
+		// Update RSSI if the new reading is stronger
+		if rssi != 0 && rssi > existing.RSSI {
+			existing.RSSI = rssi
 		}
+		return
+	}
+	t.APs[key] = &AP{
+		BSSID:   bssid,
+		SSID:    ssid,
+		Channel: channel,
+		RSSI:    rssi,
 	}
 }
 
@@ -86,6 +109,7 @@ func (t *Table) All() []*AP {
 			Channel: ap.Channel,
 			Clients: clients,
 			Deauths: ap.Deauths,
+			RSSI:    ap.RSSI,
 		})
 	}
 	return out
