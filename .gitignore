@@ -1,0 +1,13 @@
+# Binary output
+deadair
+deadair.exe
+
+# macOS
+.DS_Store
+
+# Go build cache
+*.test
+*.out
+
+# GoReleaser dist
+dist/
