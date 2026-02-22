@@ -7,15 +7,31 @@ before:
     - go mod tidy
 
 builds:
-  - env:
+  # Linux amd64 — native, no cross-compiler needed
+  - id: linux-amd64
+    env:
       - CGO_ENABLED=1
     main: .
     binary: deadair
     goos:
       - linux
-      - darwin
     goarch:
       - amd64
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+  # Linux arm64 — requires gcc-aarch64-linux-gnu installed on the runner
+  - id: linux-arm64
+    env:
+      - CGO_ENABLED=1
+      - CC=aarch64-linux-gnu-gcc
+    main: .
+    binary: deadair
+    goos:
+      - linux
+    goarch:
       - arm64
     flags:
       - -trimpath
@@ -23,7 +39,11 @@ builds:
       - -s -w -X main.version={{.Version}}
 
 archives:
-  - format: tar.gz
+  - ids:
+      - linux-amd64
+      - linux-arm64
+    formats:
+      - tar.gz
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     files:
       - README.md
