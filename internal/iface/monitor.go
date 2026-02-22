@@ -65,16 +65,24 @@ func IsAlreadyMonitor(iface string) bool {
 // --- Linux implementation ---
 
 func linuxEnableMonitor(iface string) error {
-	// First try with iw (modern)
+	// 1. Attempt to cleanly disconnect from any active network using NetworkManager.
+	// If nmcli isn't installed or fails, we silently ignore it and proceed,
+	// because taking the interface down below will forcefully cut the connection anyway.
+	_ = runCmd("nmcli", "device", "disconnect", iface)
+
+	// 2. Take interface down
 	if err := runCmd("ip", "link", "set", iface, "down"); err != nil {
 		return fmt.Errorf("ip link down: %w", err)
 	}
+
+	// 3. Set monitor mode (try iw first, fallback to iwconfig)
 	if err := runCmd("iw", "dev", iface, "set", "type", "monitor"); err != nil {
-		// Fallback: try iwconfig
 		if err2 := runCmd("iwconfig", iface, "mode", "monitor"); err2 != nil {
 			return fmt.Errorf("iw failed (%v); iwconfig also failed (%v)", err, err2)
 		}
 	}
+
+	// 4. Bring interface back up
 	if err := runCmd("ip", "link", "set", iface, "up"); err != nil {
 		return fmt.Errorf("ip link up: %w", err)
 	}
