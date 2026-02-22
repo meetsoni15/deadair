@@ -72,7 +72,20 @@ Inspired by [wifijammer](https://github.com/DanMcInerney/wifijammer).
 
 ## Installation
 
-### Pre-built binary (Linux amd64)
+> [!IMPORTANT]
+> **Install `libpcap-dev` first** — `gopacket` requires the libpcap C headers at compile time:
+> ```bash
+> # Debian / Ubuntu / Kali
+> sudo apt install libpcap-dev
+>
+> # Arch
+> sudo pacman -S libpcap
+>
+> # Fedora / RHEL
+> sudo dnf install libpcap-devel
+> ```
+
+### Pre-built binary (Linux amd64 — no compilation needed)
 ```bash
 # Download latest release
 curl -sL https://github.com/meetsoni15/deadair/releases/latest/download/deadair_linux_amd64.tar.gz | tar xz
