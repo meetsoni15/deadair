@@ -1,6 +1,8 @@
 # Binary output
 deadair
 deadair.exe
+deadair-linux-amd64
+deadair-darwin-*
 
 # macOS
 .DS_Store
