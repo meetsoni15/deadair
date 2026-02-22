@@ -34,9 +34,14 @@ func FindBest() (string, error) {
 	for _, dev := range devs {
 		name := strings.ToLower(dev.Name)
 
+		// Ignore bluetooth interfaces
+		if strings.Contains(name, "bluetooth") || strings.Contains(name, "btmon") {
+			continue
+		}
+
 		// Already in monitor mode?
 		for _, suffix := range monitorSuffixes {
-			if strings.Contains(name, suffix) {
+			if strings.HasSuffix(name, suffix) || strings.Contains(name, suffix) {
 				if monCandidate == "" {
 					monCandidate = dev.Name
 				}
