@@ -65,12 +65,7 @@ func IsAlreadyMonitor(iface string) bool {
 // --- Linux implementation ---
 
 func linuxEnableMonitor(iface string) error {
-	// 1. Attempt to cleanly disconnect from any active network using NetworkManager.
-	// If nmcli isn't installed or fails, we silently ignore it and proceed,
-	// because taking the interface down below will forcefully cut the connection anyway.
-	_ = runCmd("nmcli", "device", "disconnect", iface)
-
-	// 2. Take interface down
+	// 1. Take interface down
 	if err := runCmd("ip", "link", "set", iface, "down"); err != nil {
 		return fmt.Errorf("ip link down: %w", err)
 	}

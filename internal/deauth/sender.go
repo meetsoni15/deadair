@@ -104,12 +104,16 @@ func buildDeauthFrame(src, dst, bssid net.HardwareAddr) ([]byte, error) {
 		ComputeChecksums: true,
 	}
 
-	// Radiotap header (empty — driver fills signal info)
-	radiotap := &layers.RadioTap{}
+	// Radiotap header (minimum 8 bytes for injection)
+	radiotap := &layers.RadioTap{
+		Version: 0,
+		Length:  8,
+	}
 
 	// 802.11 management frame header
 	dot11 := &layers.Dot11{
 		Type:           layers.Dot11TypeMgmtDeauthentication,
+		DurationID:     314, // standard duration for deauth
 		Address1:       dst,
 		Address2:       src,
 		Address3:       bssid,
