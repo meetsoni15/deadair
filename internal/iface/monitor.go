@@ -5,6 +5,8 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
+
+	"github.com/google/gopacket/pcap"
 )
 
 // EnableMonitor puts the given interface into monitor mode.
@@ -33,12 +35,25 @@ func DisableMonitor(iface string) error {
 }
 
 // MonitorName returns the expected monitor-mode interface name.
-// On Linux, airmon-ng typically appends "mon". We handle both.
+// If airmon-ng was used, it might be iface+"mon". If iw was used, it stays iface.
 func MonitorName(iface string) string {
 	if strings.HasSuffix(iface, "mon") {
 		return iface
 	}
-	return iface + "mon"
+
+	// Check if the "mon" suffixed interface actually exists
+	devs, err := pcap.FindAllDevs()
+	if err == nil {
+		monName := iface + "mon"
+		for _, d := range devs {
+			if d.Name == monName {
+				return monName
+			}
+		}
+	}
+
+	// If it doesn't exist, iw just changed the mode of the original interface
+	return iface
 }
 
 // IsAlreadyMonitor returns true if the interface name suggests monitor mode.
