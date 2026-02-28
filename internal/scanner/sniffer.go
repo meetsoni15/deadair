@@ -116,7 +116,7 @@ func (s *Sniffer) processPacket(pkt gopacket.Packet) {
 	if rt := pkt.Layer(layers.LayerTypeRadioTap); rt != nil {
 		if rtl, ok := rt.(*layers.RadioTap); ok {
 			rssi = int8(rtl.DBMAntennaSignal)
-			channel = int(rtl.ChannelFrequency)
+			channel = freqToChannel(int(rtl.ChannelFrequency))
 		}
 	}
 
@@ -225,6 +225,19 @@ func extractSSID(pkt gopacket.Packet) string {
 		}
 	}
 	return ""
+}
+
+// freqToChannel converts a Wi-Fi frequency in MHz to a 2.4GHz/5GHz channel number.
+func freqToChannel(freq int) int {
+	switch {
+	case freq == 2484:
+		return 14
+	case freq >= 2412 && freq <= 2472:
+		return (freq-2412)/5 + 1
+	case freq >= 5180 && freq <= 5825:
+		return (freq - 5000) / 5
+	}
+	return 0
 }
 
 func isValidMAC(mac net.HardwareAddr) bool {

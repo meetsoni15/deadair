@@ -339,6 +339,7 @@ func main() {
 					if ignoreConnectedBSSID != nil && ap.BSSID.String() == ignoreConnectedBSSID.String() {
 						continue
 					}
+
 					for _, client := range ap.Clients {
 						if model.Paused {
 							time.Sleep(100 * time.Millisecond)
