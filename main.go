@@ -340,6 +340,13 @@ func main() {
 						continue
 					}
 
+					// Channel-aware deauth: only inject when the interface is tuned
+					// to the target AP's channel — the key trick from wifijammer.
+					// Skip when hopping (LockedCh==0) and the channels don't match.
+					if hopper.LockedCh == 0 && ap.Channel > 0 && ap.Channel != hopper.Current {
+						continue
+					}
+
 					for _, client := range ap.Clients {
 						if model.Paused {
 							time.Sleep(100 * time.Millisecond)

@@ -34,16 +34,13 @@ func NewHopper(iface string, maxChan, locked int) *Hopper {
 // Run starts the hopping loop. Call in a goroutine.
 // advanceCh receives a signal when deauth for current channel is done (for fast hopping).
 func (h *Hopper) Run(advanceCh <-chan struct{}) {
-	defer close(h.Ready)
-
 	if h.LockedCh > 0 {
 		// Locked — set once and stay
 		_ = h.setChannel(h.LockedCh)
 		h.Current = h.LockedCh
 		// Signal ready immediately, then block until stopped
-		select {
-		case <-h.done:
-		}
+		close(h.Ready)
+		<-h.done
 		return
 	}
 
@@ -81,7 +78,7 @@ func (h *Hopper) Run(advanceCh <-chan struct{}) {
 
 		if firstPass {
 			firstPass = false
-			close(h.Ready) // Signal that first pass is done — re-close guard needed
+			close(h.Ready) // Signal that first pass is done
 		}
 	}
 }

@@ -104,10 +104,13 @@ func buildDeauthFrame(src, dst, bssid net.HardwareAddr) ([]byte, error) {
 		ComputeChecksums: true,
 	}
 
-	// Radiotap header (minimum 8 bytes for injection)
+	// Radiotap header with explicit rate field.
+	// A bare 8-byte header (no present bits) causes many mac80211 drivers to
+	// silently drop injected frames. Setting Rate tells the driver to use 1 Mbps
+	// (value 2 in 500 kbps units) — the lowest, most robust injection rate.
 	radiotap := &layers.RadioTap{
-		Version: 0,
-		Length:  8,
+		Present: layers.RadioTapPresentRate,
+		Rate:    2, // 1 Mbps (500 kbps units)
 	}
 
 	// 802.11 management frame header
